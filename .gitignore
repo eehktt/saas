@@ -1,0 +1,14 @@
+#Django stuff
+local_settings.py
+*.sqlite3
+__pycache__/
+*$py.class
+*.py[cod]
+
+#PyCharm
+.idea/
+.DS_Store
+
+#database migrations
+*/migrations/*.py
+!*/migreations/__init__.py
