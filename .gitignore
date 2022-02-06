@@ -1,4 +1,4 @@
-#Django stuff
+ #Django stuff
 local_settings.py
 *.sqlite3
 __pycache__/

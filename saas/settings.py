@@ -55,7 +55,7 @@ ROOT_URLCONF = 'saas.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
+        'DIRS': [BASE_DIR, '/templates']
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -120,3 +120,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# ######## 短信配置
+
+SMS_USER_ID = '7066'
+SMS_ACCOUNT = 'eehkcn'
+SMS_PASSWORD = 'zxc123456'
+
+try:
+    from .local_settings import *
+except Exception:
+    pass
