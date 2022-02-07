@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'web/plugins/bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'web/plugins/fontawesome/css/all.css' %}">
+    {% block css %}{% endblock %}
+</head>
+<body>
+
+    {% block contant %}
+    {% endblock %}
+
+
+    {#jQ#}
+    <script src="{% static 'web/plugins/bootstrap/bootstrap.min.js' %}"></script>
+    {% block js %}{% endblock %}
+</body>
+</html>
