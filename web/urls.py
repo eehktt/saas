@@ -7,4 +7,5 @@ urlpatterns = [
     # 加上name属性方便反向解析
     url(r'^register/$', account.register, name='register'),
     url(r'^send/sms/$', account.send_sms, name='send_sms'),
+    url(r'^login/sms/$', account.login_sms, name='login_sms'),
 ]

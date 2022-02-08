@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.http.response import JsonResponse
 
 from web import models
-from web.forms.account import RegisterModelForm, SendSmsForm
+from web.forms.account import RegisterModelForm, SendSmsForm, LoginSmsForm
 
 
 def register(request):
@@ -14,7 +14,7 @@ def register(request):
         form = RegisterModelForm()
         return render(request, "web/register.html", {"form": form})
     print(request.POST)
-    form = RegisterModelForm(data = request.POST)
+    form = RegisterModelForm(data=request.POST)
     # 拿到校验信息
     if form.is_valid():
         # 验证通过 写入数据库
@@ -24,7 +24,7 @@ def register(request):
         # data.pop('code')
         # data.pop('confirm_password')
         # instance = models.UserInfo.objects.create(**data)
-        return JsonResponse({"status": True, 'data': '/login/'})
+        return JsonResponse({"status": True, 'data': '/login/sms/'})
     return JsonResponse({"status": False, "error": form.errors})
 
 
@@ -40,3 +40,16 @@ def send_sms(request):
         return JsonResponse({"status": True})
     return JsonResponse({"status": False, "error": form.errors})
 
+
+def login_sms(request):
+    if request.method == 'GET':
+        form = LoginSmsForm()
+        return render(request, 'web/login_sms.html', {'form': form})
+    print(request.POST)
+    form = LoginSmsForm(data=request.POST)
+    if form.is_valid():
+        # 用户信息放到session 保存登陆状态
+        userObject = form.cleaned_data['phone']
+        print(userObject)
+        return JsonResponse({"status": True, "data": "/index/"})
+    return JsonResponse({"status": False, "error": form.errors})

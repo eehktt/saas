@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django_redis import get_redis_connection
 import random
-
+from web.forms.boostrap import BoostrapForm
 from utils.encrypt import md5
 from web import models
 from utils.sms.sms import send_sms_single
@@ -40,7 +40,7 @@ class RegisterModelForm(forms.ModelForm):
 
     # 一定要加 *args, **kwargs view的data参数才能传进来
     def __init__(self, *args, **kwargs):
-        super().__init__( *args, **kwargs)
+        super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
             if name == 'confirm_password':
@@ -90,9 +90,42 @@ class RegisterModelForm(forms.ModelForm):
         phone = self.cleaned_data.get('phone')
         code = self.cleaned_data.get('code')
         conn = get_redis_connection()
+        #  -如果手机号校验未通过，抛出异常
         if not phone:
             raise ValidationError('非法请求')
         redis_code = conn.get(phone)
+        if not redis_code:
+            raise ValidationError('验证码失效，请重新获取')
+        # redis 拿出来的数据是字节形式 需要解码为utf8 再做比较
+        redis_str_code = redis_code.decode('utf-8')
+        # 比较的时候格式化 去掉两端空白
+        if redis_str_code != code.strip():
+            raise ValidationError('验证码错误，请重新输入')
+        return code
+
+
+# 只用Form 所有的字段就得自己写了 不能用meta了
+class LoginSmsForm(BoostrapForm, forms.Form):
+    phone = forms.CharField(label='手机号', validators=[RegexValidator(r'^1[3456789]\d{9}$', '手机号格式错误'), ])
+    code = forms.CharField(label='验证码')
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        # 取用户对象 把用户对象给返回了 不需要再通过手机号取用户对象
+        user_object = models.UserInfo.objects.filter(phone=phone).first()
+        if not user_object:
+            raise ValidationError('手机号未注册')
+        return user_object
+
+    def clean_code(self):
+        user_object = self.cleaned_data.get('phone')
+        code = self.cleaned_data.get('code')
+        conn = get_redis_connection()
+        #  -如果手机号校验未通过，抛出异常,不需再校验验证马子
+        if not user_object:
+            return code
+        # 取到的是用户对象 继续获取里面的phone属性
+        redis_code = conn.get(user_object.phone)  # 从redis中获取输入手机号的验证码
         if not redis_code:
             raise ValidationError('验证码失效，请重新获取')
         # redis 拿出来的数据是字节形式 需要解码为utf8 再做比较
@@ -110,15 +143,26 @@ class SendSmsForm(forms.Form):
     def clean_phone(self):
         """手机号校验的钩子"""
         phone = self.cleaned_data.get('phone')
+        tpl = self.request.POST.get('tpl')
         # 校验数据库中是否已有手机号
         exist = models.UserInfo.objects.filter(phone=phone).exists()
-        if exist:
-            raise ValidationError('手机号已注册')
-
+        code = random.randrange(1000, 9999)
+        # 判断短信模版
+        if not tpl:
+            raise ValidationError('模版错误')
+        if tpl == 'login':
+            if not exist:
+                raise ValidationError('手机号未注册')
+            sms = "您的登录验证码是:" + str(code) + "，有效期十分钟，如非本人操作请忽略。"
+        elif tpl == 'register':
+            if exist:
+                raise ValidationError('手机号已注册')
+            sms = "您的注册验证码是:" + str(code) + "，有效期十分钟，如非本人操作请忽略。"
+        else:
+            raise ValidationError('非法请求')
         # 为了操作校验 展示信息比较方便 将发短信 写入redis功能也写入此处
         # 发短信
-        code = random.randrange(1000, 9999)
-        res = send_sms_single(phone, "您的注册验证码是:" + str(code) + "，有效期十分钟，如非本人操作请忽略。")
+        res = send_sms_single(phone, sms)
         if res['result'] != 'Success':
             print(res['result'])
             raise ValidationError("短信发送失败，{}".format(res['message']))

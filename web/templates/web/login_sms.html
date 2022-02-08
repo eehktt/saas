@@ -5,13 +5,13 @@
     <link rel="stylesheet" href="{% static 'web/css/account.css' %}">
 {% endblock %}
 
-{% block title %}用户注册{% endblock %}
+{% block title %}用户登录{% endblock %}
 
 {% block contant %}
     <div class="container account">
-        <div class="title">用户注册</div>
+        <div class="title">用户登陆</div>
 {#  不对表单数据校验  #}
-        <form id="regForm" method="post" action="" novalidate>
+        <form id="smsForm" method="post" action="" novalidate>
             {% csrf_token %}
             {% for field in form %}
                 {% if field.name == 'code' %}
@@ -38,52 +38,20 @@
             {% endfor %}
 
             <div class="d-grid gap-2">
-{#不能写submit类型 因为要通过ajax提交 不影响倒计时#}
-                <input id="btnReg" value="注册" type="button" class="btn btn-primary">
-                <input value="返回登陆" type="button" class="btn btn-outline-primary" onclick="window.location.href='/login/sms'">
+            {#不能写submit类型否则会跳转到新界面 因为要通过ajax提交  不影响倒计时#}
+                <input id="btnLogin" value="登录" type="button" class="btn btn-primary">
+                <input value="新用户注册" type="button" class="btn btn-outline-primary" onclick="window.location.href='/register/'">
             </div>
         </form>
     </div>
-
 {% endblock %}
 
 {% block js %}
-{#  页面加载完成后自动执行  #}
     <script>
-        function bindClickBtnReg() {
-            $('#btnReg').click(function (){
-                $('.error-msg').empty()
-                {#收集表单中的数据#}
-                {#ajax发送到后台#}
-                {#获取到表单的所有键值，还能携带CSRFToken#}
-                let data = $('#regForm').serialize()
-                $.ajax({
-                    data: data,
-                    type: 'POST',
-                    url: '{% url 'register' %}',
-                    dataType: "JSON",
-                    success:function (res){
-                        console.log(res)
-                        if(res.status){
-                            console.log('注册成功');
-                            location.href = res.data
-                        }else{
-                            $.each(res.error, function (k,v){
-                                {#找到当前元素的下一个元素（即对应的错误信息span）并添加错误信息#}
-                                console.log(v[0]);
-                                $("#id_"+k).next().text(v[0]);
-                            })
-                        }
-                    },
-                })
-            })
-        }
-
         $(function(){
             bindClickBtnSms()
-            bindClickBtnReg()
+            bindClickBtnLogin()
         });
-        {#点击获取验证码的按钮绑定事件#}
         function bindClickBtnSms(){
             $('#btnSms').click(function (){
                 {#将所有错误信息置为空#}
@@ -99,7 +67,7 @@
                     type:"POST",
                     data:{
                         phone:phone,
-                        tpl:"register"
+                        tpl:"login"
                     },
                     {#将服务端返回的数据反序列化为字典#}
                     dataType:"JSON",
@@ -138,6 +106,36 @@
                     $smsBtn.val('重新发送').prop('disabled', false)
                 }
             }, 1000)
+        }
+
+        function bindClickBtnLogin() {
+            $('#btnLogin').click(function (){
+                $('.error-msg').empty()
+                {#收集表单中的数据#}
+                {#ajax发送到后台#}
+                {#获取到表单的所有键值，还能携带CSRF_Token#}
+                let data = $('#smsForm').serialize()
+                console.log(data)
+                $.ajax({
+                    data: data,
+                    type: 'POST',
+                    url: '{% url 'login_sms' %}',
+                    dataType: "JSON",
+                    success:function (res){
+                        console.log(res)
+                        if(res.status){
+                            console.log('注册成功');
+                            location.href = res.data
+                        }else{
+                            $.each(res.error, function (k,v){
+                                {#找到当前元素的下一个元素（即对应的错误信息span）并添加错误信息#}
+                                console.log(v[0]);
+                                $("#id_"+k).next().text(v[0]);
+                            })
+                        }
+                    },
+                })
+            })
         }
     </script>
 {% endblock %}
