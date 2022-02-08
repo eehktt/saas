@@ -18,7 +18,7 @@ account = settings.SMS_ACCOUNT
 password = settings.SMS_PASSWORD
 
 
-def sms_single_send(mobile, content):
+def send_sms_single(mobile, content):
     data = {
         "userid": userId,
         "account": account,
@@ -36,19 +36,28 @@ def sms_single_send(mobile, content):
     root_node = dom_tree.documentElement
     print("节点名", root_node.nodeName)
 
+    # 默认是失败
+    return_status = 'failed'
+    return_msg = '未知错误，请联系管理员'
+
     msg_list = []
     for node in root_node.childNodes:
         msg_list.append(node.nodeName)
 
     if 'returnstatus' in msg_list:
         status = root_node.getElementsByTagName('returnstatus')[0]
+        return_status = status.childNodes[0].data
         print('returnstatus:', status.childNodes[0].data)
     if 'message' in msg_list:
         message = root_node.getElementsByTagName('message')[0]
+        return_msg = message.childNodes[0].data
         print('message:', message.childNodes[0].data)
     if 'successCounts' in msg_list:
         success_counts = root_node.getElementsByTagName('successCounts')[0]
+        return_sussess_counts = success_counts.childNodes[0].data
         print('successCounts:', success_counts.childNodes[0].data)
+    response = {'result': return_status, 'message': return_msg}
+    return response
 
 
 def sms_info():

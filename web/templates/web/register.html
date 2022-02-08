@@ -1,7 +1,123 @@
 {% extends 'layout/basic.html' %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'web/css/account.css' %}">
+{% endblock %}
 
 {% block title %}用户注册{% endblock %}
 
 {% block contant %}
+    <div class="container account">
+        <div class="title">用户注册</div>
+{#  不对表单数据校验  #}
+        <form id="form" method="post" action="" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == 'code' %}
+                    <div class="row  form-group">
+                        <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-5">
+                            {{ field }}
+                            <span class="error-msg">{{ field.errors.0 }}</span>
+                        </div>
+                        <div class="col-sm-4 d-grid div-code">
+                            <input id="btnSms" type="button" class="btn btn-secondary btn-code" value="发送验证码"/>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row  form-group">
+                        <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                            <span class="error-msg">{{ field.errors.0 }}</span>
+                        </div>
 
+                    </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="d-grid gap-2">
+{#不能写submit类型 因为要通过ajax提交 不影响倒计时#}
+                <input id="btnReg" value="注册" type="submit" class="btn btn-primary">
+                <input value="返回登陆" type="submit" class="btn btn-outline-primary">
+            </div>
+        </form>
+    </div>
+
+
+{% endblock %}
+
+{% block js %}
+{#  页面加载完成后自动执行  #}
+    <script>
+        function bindClickBtnReg() {
+            $('#btnReg').click(function (){
+            {#收集表单中的数据#}
+            {#ajax发送到后台#}
+
+            })
+        }
+
+        $(function(){
+            bindClickBtnSms()
+            bindClickBtnReg()
+        });
+        {#点击获取验证码的按钮绑定事件#}
+        function bindClickBtnSms(){
+            $('#btnSms').click(function (){
+                {#将所有错误信息置为空#}
+                $('.error-msg').empty()
+                {#获取csrf_token#}
+                const regex = /.*csrftoken=([^;.]*).*$/;
+                let xCSRFToken = document.cookie.match(regex) === null ? null : document.cookie.match(regex)[1]
+
+                let phone = $('#id_phone').val();
+                {#发送ajax请求，将手机号发送到后台#}
+                $.ajax({
+                    url:"{% url 'send_sms' %}",
+                    type:"POST",
+                    data:{
+                        phone:phone,
+                        tpl:"register"
+                    },
+                    {#将服务端返回的数据反序列化为字典#}
+                    dataType:"JSON",
+                    headers: {
+                        "X-CSRFToken": xCSRFToken
+                    },
+                    {#ajax请求发送成功后自动回调,res就是后段返回到值#}
+                    success:function (res){
+                        console.log(res);
+                        {#如果后段返回成功#}
+                        if(res.status){
+                            sendSmsDelay()
+                            console.log('发送成功');
+                        }else{
+                            $.each(res.error, function (k,v){
+                                {#找到当前元素的下一个元素（即对应的错误信息span）并添加错误信息#}
+                                console.log(v[0]);
+                                $("#id_"+k).next().text(v[0]);
+                            })
+                        }
+                    }
+                })
+            })
+        }
+        {#倒计时#}
+        function sendSmsDelay(){
+            let $smsBtn = $("#btnSms")
+
+            $smsBtn.prop('disabled',true)
+            let time = 60
+            let remind = setInterval(function (){
+                $smsBtn.val('重新发送('+time+'s)')
+                time = time - 1
+                if (time < 1){
+                    clearInterval(remind)
+                    $smsBtn.val('重新发送').prop('disabled', false)
+                }
+            }, 1000)
+        }
+    </script>
 {% endblock %}
