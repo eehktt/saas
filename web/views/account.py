@@ -4,12 +4,28 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.http.response import JsonResponse
+
+from web import models
 from web.forms.account import RegisterModelForm, SendSmsForm
 
 
 def register(request):
-    form = RegisterModelForm()
-    return render(request, "web/register.html", {"form": form})
+    if request.method == 'GET':
+        form = RegisterModelForm()
+        return render(request, "web/register.html", {"form": form})
+    print(request.POST)
+    form = RegisterModelForm(data = request.POST)
+    # 拿到校验信息
+    if form.is_valid():
+        # 验证通过 写入数据库
+        # 这条语句会自动剔除数据库中不需要的部分
+        form.save()
+        # data = form.cleaned_data
+        # data.pop('code')
+        # data.pop('confirm_password')
+        # instance = models.UserInfo.objects.create(**data)
+        return JsonResponse({"status": True, 'data': '/login/'})
+    return JsonResponse({"status": False, "error": form.errors})
 
 
 def send_sms(request):

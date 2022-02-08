@@ -11,7 +11,7 @@
     <div class="container account">
         <div class="title">用户注册</div>
 {#  不对表单数据校验  #}
-        <form id="form" method="post" action="" novalidate>
+        <form id="regForm" method="post" action="" novalidate>
             {% csrf_token %}
             {% for field in form %}
                 {% if field.name == 'code' %}
@@ -39,8 +39,8 @@
 
             <div class="d-grid gap-2">
 {#不能写submit类型 因为要通过ajax提交 不影响倒计时#}
-                <input id="btnReg" value="注册" type="submit" class="btn btn-primary">
-                <input value="返回登陆" type="submit" class="btn btn-outline-primary">
+                <input id="btnReg" value="注册" type="button" class="btn btn-primary">
+                <input value="返回登陆" type="button" class="btn btn-outline-primary" onclick="window.location.href='/login/'">
             </div>
         </form>
     </div>
@@ -53,9 +53,30 @@
     <script>
         function bindClickBtnReg() {
             $('#btnReg').click(function (){
-            {#收集表单中的数据#}
-            {#ajax发送到后台#}
-
+                $('.error-msg').empty()
+                {#收集表单中的数据#}
+                {#ajax发送到后台#}
+                {#获取到表单的所有键值，还能携带CSRFToken#}
+                let data = $('#regForm').serialize()
+                $.ajax({
+                    data: data,
+                    type: 'POST',
+                    url: '{% url 'register' %}',
+                    dataType: "JSON",
+                    success:function (res){
+                        console.log(res)
+                        if(res.status){
+                            console.log('注册成功');
+                            location.href = res.data
+                        }else{
+                            $.each(res.error, function (k,v){
+                                {#找到当前元素的下一个元素（即对应的错误信息span）并添加错误信息#}
+                                console.log(v[0]);
+                                $("#id_"+k).next().text(v[0]);
+                            })
+                        }
+                    },
+                })
             })
         }
 
