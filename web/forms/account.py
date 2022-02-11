@@ -1,4 +1,5 @@
 # 创建基本的modelform
+import requests
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
@@ -10,7 +11,7 @@ from web import models
 from utils.sms.sms import send_sms_single
 
 
-class RegisterModelForm(forms.ModelForm):
+class RegisterModelForm(BoostrapForm, forms.ModelForm):
     # 正则表达式匹配phone字段，不通过->报错
     phone = forms.CharField(label='手机号', validators=[RegexValidator(r'^1[3456789]\d{9}$', '手机号格式错误'), ])
     # 替换自动生成的密码
@@ -37,17 +38,6 @@ class RegisterModelForm(forms.ModelForm):
         model = models.UserInfo
         # 对UserInfo的字段排序
         fields = ["username", "password", "confirm_password", "email", "phone", "code"]
-
-    # 一定要加 *args, **kwargs view的data参数才能传进来
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
-            if name == 'confirm_password':
-                pass
-            else:
-                # 格式化不能被用户控制 否则会信息泄漏甚至rce
-                field.widget.attrs['placeholder'] = '请输入%s' % (field.label,)
 
     def clean_username(self):
         # 局部钩子：先拿到值再返回回去
@@ -134,6 +124,39 @@ class LoginSmsForm(BoostrapForm, forms.Form):
         if redis_str_code != code.strip():
             raise ValidationError('验证码错误，请重新输入')
         return code
+
+
+class LoginForm(BoostrapForm, forms.Form):
+    username = forms.CharField(label='账号')
+    # 加上render_value=True->代表不自动删除密码
+    password = forms.CharField(label='密码', widget=forms.PasswordInput(render_value=True),
+                               min_length=8,
+                               max_length=64,
+                               error_messages={
+                                   'min_length': '密码长度需要大于8位',
+                                   'max_length': '密码长度 不能大于64位',
+                               })
+    code = forms.CharField(label='验证码')
+
+    # 钩子将用户输入的密码转为md5再返回给视图
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        password = md5(password)
+        return password
+
+    def clean_code(self):
+        code = self.cleaned_data['code']
+        session_code = self.request.session.get('image_code')
+        if not session_code:
+            raise ValidationError('验证码失效，请重新获取')
+        # 先去空格再转成大写
+        elif session_code.strip().upper() != code.upper():
+            raise ValidationError('验证码错误，请重新输入')
+        return code
+
+    def __init__(self, request, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
 
 
 # 和和数据库没关系，不用modelform，只对数据进行校验

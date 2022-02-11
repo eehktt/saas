@@ -1,0 +1,79 @@
+{% extends 'layout/basic.html' %}
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'web/css/account.css' %}">
+{% endblock %}
+
+{% block title %}用户登录{% endblock %}
+
+{% block contant %}
+    <div class="container account">
+        <div class="title">用户登陆</div>
+{#  不对表单数据校验  #}
+{#    这里用form表单不用ajax是为了提交的时候页面自动刷新 验证码也可以随之刷新   #}
+        <form id="smsForm" method="post" action="" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == 'code' %}
+                    <div class="row  form-group">
+                        <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-5">
+                            {{ field }}
+                            <span class="error-msg">{{ field.errors.0 }}</span>
+                        </div>
+                        <div class="col-sm-4 d-grid div-code">
+                            <img src="{% url 'image_code' %}" id="imgCode" title="点击更换验证码">
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row  form-group">
+                        <label for="{{ field.id_for_label }}" class="col-sm-3 col-form-label">{{ field.label }}</label>
+                        <div class="col-sm-9">
+                            {{ field }}
+                            <span class="error-msg">{{ field.errors.0 }}</span>
+                        </div>
+
+                    </div>
+                {% endif %}
+            {% endfor %}
+{#            <div>#}
+{#                <div style="float: right">#}
+{#                    <a href="{% url 'login_sms' %}">短信登陆</a>#}
+{#                </div>#}
+{#            </div>#}
+            <div class="d-grid gap-2">
+            {#不能写submit类型否则会跳转到新界面 因为要通过ajax提交  不影响倒计时#}
+                <div class="input-group">
+                    <input id="btnLogin"  value="登录" type="submit" class="btn btn-primary form-control">
+{#                  <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">#}
+{#                    <span class="visually-hidden">Toggle Dropdown</span>#}
+{#                  </button>#}
+{#                  <ul class="dropdown-menu dropdown-menu-end">#}
+{#                    <li><a class="dropdown-item" href="{% url 'login_sms' %}">短信登录</a></li>#}
+{#                  </ul>#}
+                </div>
+
+
+                <input value="新用户注册" type="button" class="btn btn-outline-primary" onclick="window.location.href='/register/'">
+            </div>
+            <div style="margin-top: 5px">
+                <a href="{% url 'login_sms' %}" style="text-decoration-line: none">手机短信登录</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        $(function (){
+            bindClickBtnImgCode()
+        })
+        function bindClickBtnImgCode(){
+            $('#imgCode').click(function (){
+                let oldSrc = $(this).attr('src')
+                $(this).attr('src', oldSrc + '?')
+            })
+        }
+    </script>
+{% endblock %}

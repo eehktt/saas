@@ -42,6 +42,9 @@
                 <input id="btnLogin" value="登录" type="button" class="btn btn-primary">
                 <input value="新用户注册" type="button" class="btn btn-outline-primary" onclick="window.location.href='/register/'">
             </div>
+            <div style="margin-top: 5px">
+                <a href="{% url 'login' %}" style="text-decoration-line: none">账户密码登录</a>
+            </div>
         </form>
     </div>
 {% endblock %}

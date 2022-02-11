@@ -2,11 +2,13 @@
 用户账户功能 注册 短信 登陆 注销
 """
 from django.http import HttpResponse
-from django.shortcuts import render
+from io import BytesIO
+from django.shortcuts import render, redirect
 from django.http.response import JsonResponse
-
+from utils.image_check_code import check_code
+from django.db.models import Q
 from web import models
-from web.forms.account import RegisterModelForm, SendSmsForm, LoginSmsForm
+from web.forms.account import RegisterModelForm, SendSmsForm, LoginSmsForm, LoginForm
 
 
 def register(request):
@@ -48,8 +50,48 @@ def login_sms(request):
     print(request.POST)
     form = LoginSmsForm(data=request.POST)
     if form.is_valid():
-        # 用户信息放到session 保存登陆状态
+        # 登陆模型返回的phone字段已经是用户对象 用户信息放到session 保存登陆状态
         userObject = form.cleaned_data['phone']
-        print(userObject)
+        request.session['user_id'] = userObject.id
+        request.session.set_expiry(60 * 60 * 24 * 14)
         return JsonResponse({"status": True, "data": "/index/"})
     return JsonResponse({"status": False, "error": form.errors})
+
+
+def login(request):
+    if request.method == 'GET':
+        form = LoginForm(request)
+        return render(request, 'web/login.html', {'form': form})
+    form = LoginForm(request, data=request.POST)
+    if form.is_valid():
+        username = form.cleaned_data['username']
+        password = form.cleaned_data['password']
+        # filter 只能构造简单的查询条件
+        # 构造复杂查询条件用Q
+        # user_object = models.UserInfo.objects.filter(username=username, password=password).first()
+        # ORM查询手机号或者邮箱是否和密码匹配
+        user_object = models.UserInfo.objects.filter(Q(email=username) | Q(phone=username)).filter(password=password)
+        if not user_object:
+            form.add_error('username', '用户名或密码错误')
+        # 登录成功 id写入session
+        request.session['user_id'] = user_object.id
+        # 设置两周过期时间
+        request.session.set_expiry(60*60*24*14)
+        return redirect('index')
+    # 前端用fields.errors.0获取每个字段的错误信息
+    return render(request, 'web/login.html', {'form': form})
+
+
+def image_code(request):
+    """生成图片验证码"""
+    image_object, val = check_code()
+    print(val)
+    stream = BytesIO()
+
+    image_object.save(stream, 'jpeg')
+    # 用session不用redis是因为比较方便 刚好可生成唯一的标识
+    # 用redis 生成随机字符串和写入用户浏览器cookie需要手动做 把随机字符串和code当成键值对写入redis
+    # 发短信用redis是因为不需要生成随机标识 手机号就是随机标识
+    request.session['image_code'] = val
+    request.session.set_expiry(60)  # 过期时间 60s
+    return HttpResponse(stream.getvalue())
