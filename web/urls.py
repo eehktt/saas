@@ -11,4 +11,6 @@ urlpatterns = [
     url(r'^login/$', account.login, name='login'),
     url(r'^image/code/$', account.image_code, name='image_code'),
     url(r'^index/$', home.index, name='index'),
+    url(r'^logout/$', account.logout, name='logout'),
+
 ]

@@ -95,3 +95,9 @@ def image_code(request):
     request.session['image_code'] = val
     request.session.set_expiry(60)  # 过期时间 60s
     return HttpResponse(stream.getvalue())
+
+
+def logout(request):
+    request.session.flush()
+    # 可以通过别名直接找到路径
+    return redirect('index')
