@@ -18,12 +18,12 @@ class PricePolicy(models.Model):
         (3, '其他'),
     )
     category = models.SmallIntegerField(verbose_name='收费类型', default=1, choices=category_choices)  # 数据库中为smallint类型
-    title = models.PositiveIntegerField(verbose_name='标题', max_length=32)
+    title = models.CharField(verbose_name='标题', max_length=32)
     price = models.PositiveIntegerField(verbose_name='价格')
     project_num = models.PositiveIntegerField(verbose_name='项目数')
     project_member = models.PositiveIntegerField(verbose_name='成员数')
     project_size = models.PositiveIntegerField(verbose_name='项目空间')
-    project_file_size = models.PositiveIntegerField(verbose_name='单文件大小')
+    pre_file_size = models.PositiveIntegerField(verbose_name='单文件大小')
     create_datetime = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
 
 

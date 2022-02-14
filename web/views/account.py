@@ -1,6 +1,8 @@
 """
 用户账户功能 注册 短信 登陆 注销
 """
+import datetime
+
 from django.http import HttpResponse
 from io import BytesIO
 from django.shortcuts import render, redirect
@@ -9,6 +11,7 @@ from utils.image_check_code import check_code
 from django.db.models import Q
 from web import models
 from web.forms.account import RegisterModelForm, SendSmsForm, LoginSmsForm, LoginForm
+from utils.uuid_util import get_order_id
 
 
 def register(request):
@@ -21,7 +24,19 @@ def register(request):
     if form.is_valid():
         # 验证通过 写入数据库
         # 这条语句会自动剔除数据库中不需要的部分
-        form.save()
+        # 把存进去的用户拿出来 为他生成一条交易记录
+        instance = form.save()
+        policy_object = models.PricePolicy.objects.filter(category=1, title='个人免费版').first()
+        # 创建交易记录
+        models.Transaction.objects.create(
+            status=2,
+            order=get_order_id(),
+            user=instance,
+            price_policy=policy_object,
+            count=0,
+            price=0,
+            start_datetime=datetime.datetime.now()
+        )
         # data = form.cleaned_data
         # data.pop('code')
         # data.pop('confirm_password')
@@ -76,7 +91,7 @@ def login(request):
         # 登录成功 id写入session
         request.session['user_id'] = user_object.id
         # 设置两周过期时间
-        request.session.set_expiry(60*60*24*14)
+        request.session.set_expiry(60 * 60 * 24 * 14)
         return redirect('index')
     # 前端用fields.errors.0获取每个字段的错误信息
     return render(request, 'web/login.html', {'form': form})
